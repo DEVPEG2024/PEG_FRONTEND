@@ -50,6 +50,14 @@ export const paymentStateData = [
     label: 'En attente',
   },
   {
+    value: 'pending_transfer',
+    label: 'Virement annoncé',
+  },
+  {
+    value: 'transfer_received',
+    label: 'Virement reçu',
+  },
+  {
     value: 'fulfilled',
     label: 'Payé',
   },

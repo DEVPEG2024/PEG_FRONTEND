@@ -1,14 +1,17 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { Invoice } from '@/@types/invoice';
 import {
+  apiCreateInvoice,
   apiDeleteInvoice,
   apiGetCustomerInvoices,
   apiGetInvoices,
   apiUpdateInvoice,
+  CreateInvoiceRequest,
   DeleteInvoiceResponse,
   GetInvoicesRequest,
   GetInvoicesResponse,
 } from '@/services/InvoicesServices';
+import { triggerNotification } from '@/services/NotificationService';
 import { unwrapData } from '@/utils/serviceHelper';
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
@@ -69,6 +72,30 @@ export const deleteInvoice = createAsyncThunk(
       apiDeleteInvoice(documentId)
     );
     return deleteInvoice;
+  }
+);
+
+// Facture émise depuis la liste (sans projet) : numérotée par le serveur,
+// ajoutée en tête de liste, le client est prévenu comme pour une facture de projet.
+export const createInvoice = createAsyncThunk(
+  SLICE_NAME + '/createInvoice',
+  async (invoice: CreateInvoiceRequest, { getState }): Promise<Invoice> => {
+    const { createInvoice }: { createInvoice: Invoice } = await unwrapData(apiCreateInvoice(invoice));
+    const user = (getState() as any).auth?.user?.user;
+    const senderId = user?.documentId || user?.id || user?._id;
+    if (senderId && createInvoice.customer?.documentId) {
+      triggerNotification({
+        eventType: 'new_invoice',
+        senderId,
+        customerRecipient: createInvoice.customer.documentId,
+        notifyAdmins: true,
+        title: 'Nouvelle facture',
+        message: `Facture ${createInvoice.name} émise`,
+        link: '/customer/invoices',
+        metadata: { invoiceId: createInvoice.documentId },
+      });
+    }
+    return createInvoice;
   }
 );
 
@@ -151,6 +178,19 @@ const invoiceListSlice = createSlice({
       state.selectedInvoice = null;
     });
     builder.addCase(updateInvoice.rejected, (state) => {
+      state.loading = false;
+    });
+    // CREATE INVOICE
+    builder.addCase(createInvoice.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(createInvoice.fulfilled, (state, action) => {
+      state.loading = false;
+      // TS2589 (limite compilateur Immer/WritableDraft) — runtime correct
+      state.invoices = [action.payload, ...(state.invoices as unknown as Invoice[])] as any;
+      state.total = state.total + 1;
+    });
+    builder.addCase(createInvoice.rejected, (state) => {
       state.loading = false;
     });
   },

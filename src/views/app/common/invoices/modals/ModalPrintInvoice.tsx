@@ -1,291 +1,10 @@
 import { useState, useEffect } from 'react';
-import {
-  Page,
-  Text,
-  View,
-  Document,
-  StyleSheet,
-  Image,
-  pdf,
-} from '@react-pdf/renderer';
-import dayjs from 'dayjs';
+import { pdf } from '@react-pdf/renderer';
 import { HiX } from 'react-icons/hi';
-import { paymentModeData } from '../constants';
-import { OrderItem } from '@/@types/orderItem';
-import { VAT_AMOUNT } from './ModalEditInvoice';
 import { Invoice } from '@/@types/invoice';
-import { countries } from '@/constants/countries.constant';
 import useResponsive from '@/utils/hooks/useResponsive';
-
-const safeAmount = (val: any) => {
-  const n = Number(val);
-  return Number.isFinite(n)
-    ? n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : '0,00';
-};
-
-// États membres de l'UE (ISO-2). Sert à distinguer les trois régimes de TVA :
-// France → TVA 20 % ; UE hors France → autoliquidation ; hors UE → exportation.
-// L'ancien test `country !== 'FR'` traitait la Suisse comme de l'autoliquidation
-// intracommunautaire, ce qui est faux — et c'est un cas courant ici (Genève).
-const EU_COUNTRIES = new Set([
-  'AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR',
-  'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK',
-]);
-
-type VatRegime = 'domestic' | 'intracom' | 'export';
-
-const resolveVatRegime = (country?: string | null): VatRegime => {
-  const c = (country || 'FR').toUpperCase();
-  if (c === 'FR') return 'domestic';
-  return EU_COUNTRIES.has(c) ? 'intracom' : 'export';
-};
-
-const VAT_LEGAL_MENTION: Record<Exclude<VatRegime, 'domestic'>, string> = {
-  intracom: 'Autoliquidation de la TVA - Article 283-2 du CGI',
-  export: 'Exoneration de TVA - Article 262 I du CGI (exportation hors UE)',
-};
-
-// Composant Document PDF separe
-const InvoicePDF = ({
-  selectedInvoice,
-  logoUrl,
-}: {
-  selectedInvoice: Invoice;
-  logoUrl: string;
-}) => {
-  const customer = selectedInvoice?.customer;
-  const companyInfo = customer?.companyInformations;
-
-  const textPaymentMethod = paymentModeData.find(
-    (item: any) => item.value === selectedInvoice?.paymentMethod
-  )?.label ?? '';
-
-  const vatRegime = resolveVatRegime(companyInfo?.country);
-  const isVatExempt = vatRegime !== 'domestic';
-
-  // Taux réellement appliqué, déduit des montants de la facture. Le calcul
-  // précédent divisait par `amount` sans garde : une facture à 0 € HT sortait
-  // « NaN% » ou « Infinity% » sur le PDF.
-  const amountHT = Number(selectedInvoice?.amount) || 0;
-  const vatAmount = Number(selectedInvoice?.vatAmount) || 0;
-  const appliedVatRate =
-    amountHT > 0 && vatAmount > 0 ? Math.round((vatAmount / amountHT) * 100) : 0;
-
-  // Une facture doit décrire ce qui est facturé. Les factures sans ligne de
-  // commande (générées depuis un projet, ou par NOVA) sortaient avec un tableau
-  // vide sous un total non nul : on rétablit une ligne unique récapitulative.
-  const orderItems = selectedInvoice?.orderItems ?? [];
-  const hasLines = orderItems.length > 0;
-
-  return (
-    <Document>
-      <Page size="A4">
-        <View style={pdfStyles.page}>
-          <View style={pdfStyles.section}>
-            {logoUrl ? (
-              <Image src={logoUrl} style={{ width: '200px', height: '70px' }} />
-            ) : null}
-            <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>
-              NOVA 2.0
-            </Text>
-            <Text style={{ fontSize: 10, marginTop: 3 }}>3 rue du bois arquet</Text>
-            <Text style={{ fontSize: 10, marginTop: 3 }}>74140 DOUVAINE</Text>
-            <Text style={{ fontSize: 10, marginTop: 3 }}>France</Text>
-            <Text style={{ fontSize: 10, marginTop: 3 }}>Email : contact@hellonova.fr</Text>
-            <View style={{ flexDirection: 'row', marginTop: 10 }}>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontWeight: 'bold', fontSize: 10, padding: 3 }}>
-                  Mode de paiement :
-                </Text>
-              </View>
-              <View style={pdfStyles.section5}>
-                <Text style={{ fontSize: 10, padding: 3 }}>{textPaymentMethod}</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 10, padding: 3 }}>{"Date d'echeance : "}</Text>
-              </View>
-              <View style={pdfStyles.section5}>
-                <Text style={{ fontSize: 10, padding: 3 }}>
-                  {selectedInvoice?.dueDate ? dayjs(selectedInvoice.dueDate).format('DD.MM.YYYY') : ''}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={{ margin: 20 }}>
-            <View style={pdfStyles.section1}>
-              <Text style={{ fontSize: 19, padding: 7, textAlign: 'center' }}>FACTURE</Text>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 10, padding: 7, textAlign: 'center' }}>FACTURE N°</Text>
-              </View>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 10, padding: 7, textAlign: 'center' }}>Date</Text>
-              </View>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 10, padding: 7, textAlign: 'center' }}>Client</Text>
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <View style={pdfStyles.section3}>
-                <Text style={{ fontSize: 10, textAlign: 'center' }}>{selectedInvoice?.name ?? ''}</Text>
-              </View>
-              <View style={pdfStyles.section3}>
-                <Text style={{ fontSize: 10, textAlign: 'center' }}>
-                  {selectedInvoice?.date ? dayjs(selectedInvoice.date).format('DD.MM.YYYY') : ''}
-                </Text>
-              </View>
-              <View style={pdfStyles.section3}>
-                <Text style={{ fontSize: 10, textAlign: 'center' }}>{customer?.name ?? ''}</Text>
-              </View>
-            </View>
-            <View style={pdfStyles.section4}>
-              <Text style={{ fontSize: 14, marginTop: 10, fontWeight: 700 }}>{customer?.name ?? ''}</Text>
-              <Text style={{ fontSize: 10, marginTop: 3 }}>{companyInfo?.address ?? ''}</Text>
-              <Text style={{ fontSize: 10, marginTop: 3 }}>
-                {(companyInfo?.zipCode ?? '') + ', ' + (companyInfo?.city ?? '')}
-              </Text>
-              <Text style={{ fontSize: 10, marginTop: 3 }}>
-                {countries.find((c) => c.value === companyInfo?.country)?.label ?? ''}
-              </Text>
-              {/* Identifiants du client : le n° de TVA intracommunautaire de
-                  l'acquéreur est obligatoire sur une facture en autoliquidation,
-                  et attendu par la compta sur toute facture B2B. */}
-              {companyInfo?.vatNumber ? (
-                <Text style={{ fontSize: 9, marginTop: 6 }}>{`TVA intracom. : ${companyInfo.vatNumber}`}</Text>
-              ) : null}
-              {companyInfo?.siretNumber ? (
-                <Text style={{ fontSize: 9, marginTop: 2 }}>{`SIRET : ${companyInfo.siretNumber}`}</Text>
-              ) : null}
-            </View>
-          </View>
-        </View>
-
-        <View style={pdfStyles.page2}>
-          <View style={pdfStyles.section10}>
-            <View style={{ flexDirection: 'row', width: '100%' }}>
-              <View style={pdfStyles.section11}><Text style={{ fontSize: 8, padding: 4 }}>Ref</Text></View>
-              <View style={pdfStyles.section12}><Text style={{ fontSize: 8, padding: 4 }}>Produit</Text></View>
-              <View style={pdfStyles.section15}><Text style={{ fontSize: 8, padding: 4 }}>Qte</Text></View>
-              <View style={pdfStyles.section11}><Text style={{ fontSize: 8, padding: 4 }}>P.U. HT</Text></View>
-              <View style={pdfStyles.section15}><Text style={{ fontSize: 8, padding: 4 }}>TVA</Text></View>
-              <View style={pdfStyles.section11}><Text style={{ fontSize: 8, padding: 4 }}>Total HT</Text></View>
-            </View>
-            {hasLines ? (
-              orderItems.map((orderItem: OrderItem, i: number) => {
-                const total = Number(orderItem?.price) || 0;
-                const qty = Array.isArray(orderItem?.sizeAndColorSelections)
-                  ? orderItem.sizeAndColorSelections.reduce((q: number, sel: any) => q + (Number(sel?.quantity) || 0), 0)
-                  : 0;
-                return (
-                  <View style={{ flexDirection: 'row', width: '100%', borderBottom: 1, borderColor: '#ECECEC' }} key={i}>
-                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4 }}>{i + 1}</Text></View>
-                    <View style={pdfStyles.section14}><Text style={{ fontSize: 8, padding: 4 }}>{orderItem?.product?.name ?? ''}</Text></View>
-                    <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{qty}</Text></View>
-                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(orderItem?.price)} EUR</Text></View>
-                    <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{appliedVatRate}% </Text></View>
-                    <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR</Text></View>
-                  </View>
-                );
-              })
-            ) : (
-              // Repli : aucune ligne de commande rattachée. Le montant facturé
-              // reste décrit, plutôt qu'un tableau vide sous un total non nul.
-              <View style={{ flexDirection: 'row', width: '100%', borderBottom: 1, borderColor: '#ECECEC' }}>
-                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4 }}>1</Text></View>
-                <View style={pdfStyles.section14}><Text style={{ fontSize: 8, padding: 4 }}>Prestation PEG</Text></View>
-                <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>1</Text></View>
-                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(amountHT)} EUR</Text></View>
-                <View style={pdfStyles.section16}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{appliedVatRate}% </Text></View>
-                <View style={pdfStyles.section13}><Text style={{ fontSize: 8, padding: 4, textAlign: 'right' }}>{safeAmount(amountHT)} EUR</Text></View>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={pdfStyles.page}>
-          <View style={pdfStyles.sectionTTC}>
-            <View style={{ flexDirection: 'row', marginTop: 5 }}>
-              <View style={pdfStyles.section2}><Text style={{ fontSize: 10, padding: 3 }}>TOTAL HT : </Text></View>
-              <View style={pdfStyles.section5}><Text style={{ fontSize: 10, padding: 3, textAlign: 'right' }}>{safeAmount(selectedInvoice?.amount)} EUR</Text></View>
-            </View>
-            {isVatExempt ? (
-              <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                <View style={{ ...pdfStyles.section2, width: 200 }}>
-                  <Text style={{ fontSize: 9, padding: 3 }}>
-                    {vatRegime === 'intracom' ? 'TVA autoliquidation' : 'TVA non applicable'}
-                  </Text>
-                </View>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                <View style={pdfStyles.section2}>
-                  <Text style={{ fontSize: 10, padding: 3 }}>
-                    TVA {vatAmount > 0 ? VAT_AMOUNT : 0} %
-                  </Text>
-                </View>
-                <View style={pdfStyles.section5}>
-                  <Text style={{ fontSize: 10, padding: 3, textAlign: 'right' }}>{safeAmount(vatAmount)} EUR</Text>
-                </View>
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', marginTop: 2 }}>
-              <View style={pdfStyles.section2}>
-                <Text style={{ fontSize: 12, padding: 3 }}>{isVatExempt ? 'Total HT :' : 'Total TTC :'} </Text>
-              </View>
-              <View style={pdfStyles.section5}>
-                <Text style={{ fontSize: 12, padding: 3, textAlign: 'right' }}>
-                  {isVatExempt ? safeAmount(amountHT) : safeAmount(selectedInvoice?.totalAmount)} EUR
-                </Text>
-              </View>
-            </View>
-            {isVatExempt && (
-              <Text style={{ fontSize: 8, marginTop: 6, fontStyle: 'italic' }}>
-                {VAT_LEGAL_MENTION[vatRegime]}
-              </Text>
-            )}
-          </View>
-        </View>
-
-        <View style={pdfStyles.page}>
-          <View style={pdfStyles.section}>
-            <Text style={{ fontSize: 10, padding: 3 }}>IBAN: FR76 1679 8000 0100 0178 1163 397</Text>
-            <Text style={{ fontSize: 10, padding: 3 }}>BIC: TRZOFR21XXX</Text>
-          </View>
-        </View>
-
-        <View style={{ marginLeft: 20, marginRight: 20, marginTop: 10 }}>
-          <Text style={{ fontSize: 8, fontWeight: 'bold', marginBottom: 4 }}>Conditions de paiement</Text>
-          <Text style={{ fontSize: 7, lineHeight: 1.4 }}>
-            {"Un acompte de 50 % du montant total TTC est exige a la validation de la commande afin de confirmer celle-ci et de permettre le lancement de la production."}
-          </Text>
-          <Text style={{ fontSize: 7, lineHeight: 1.4, marginTop: 2 }}>
-            {"Le solde de 50 % est payable a la fin du chantier, a reception des travaux ou avant la livraison des produits."}
-          </Text>
-          <Text style={{ fontSize: 7, lineHeight: 1.4, marginTop: 2 }}>
-            {"La commande ne sera consideree comme ferme et definitive qu'a reception de l'acompte."}
-          </Text>
-        </View>
-
-        <View style={pdfStyles.sectionFooter}>
-          <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>NOVA 2.0</Text>
-          <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>Siret: 94333576000014</Text>
-          <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>TVA: FR88943335760</Text>
-          <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
-            {"Pas d'escompte en cas de paiement anticipe. - Penalites pour retard de paiement : 3 fois le taux d'interet legal - Indemnite forfaitaire pour frais de recouvrement en cas de retard de paiement : 40,00 EUR"}
-          </Text>
-          <Text style={{ fontSize: 6, padding: 3, textAlign: 'center' }}>
-            {"RESERVE DE PROPRIETE : Nous nous reservons la propriete des marchandises jusqu'au paiement du prix par l'acheteur. Notre droit de revendication porte aussi bien sur les marchandises que sur leur prix si elles ont deja ete revendues (Loi du 12 mai 1980)"}
-          </Text>
-        </View>
-      </Page>
-    </Document>
-  );
-};
+import { apiGetInvoiceDocument } from '@/services/InvoicesServices';
+import InvoicePDF from '../pdf/InvoicePDF';
 
 const ModalPrintInvoice = ({
   printInvoiceDialog,
@@ -333,10 +52,18 @@ const ModalPrintInvoice = ({
           });
         } catch (err) { console.warn('[PrintInvoice] Logo indisponible, PDF généré sans logo:', err); }
 
+        // La facture complète, relue au serveur : lignes figées, projet, client.
+        // L'écran appelant (liste, projet, accueil) n'en charge qu'un extrait.
+        let invoice: Invoice = selectedInvoice;
+        try {
+          invoice = (await apiGetInvoiceDocument(selectedInvoice.documentId)) ?? selectedInvoice;
+        } catch (err) {
+          console.warn('[PrintInvoice] Relecture de la facture impossible, PDF depuis la liste :', err);
+        }
+
         if (cancelled) return;
 
-        // Generer le PDF en blob
-        const doc = <InvoicePDF selectedInvoice={selectedInvoice} logoUrl={logoUrl} />;
+        const doc = <InvoicePDF invoice={invoice} logoUrl={logoUrl} />;
         const blob = await pdf(doc).toBlob();
 
         if (cancelled) return;
@@ -345,7 +72,7 @@ const ModalPrintInvoice = ({
         setPdfUrl(objectUrl);
       } catch (e: any) {
         if (!cancelled) {
-          setPdfError(e?.message ?? 'Erreur lors de la generation du PDF');
+          setPdfError(e?.message ?? 'Erreur lors de la génération du PDF');
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -455,7 +182,7 @@ const ModalPrintInvoice = ({
           <div style={{ flex: 1, padding: 'var(--peg-pad-16)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {loading && (
               <div style={{ textAlign: 'center', padding: 40, color: 'rgba(255,255,255,0.5)', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                Generation du PDF en cours...
+                Génération du PDF en cours…
               </div>
             )}
             {pdfError && (
@@ -509,113 +236,5 @@ const ModalPrintInvoice = ({
     </>
   );
 };
-
-const pdfStyles = StyleSheet.create({
-  page: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-  },
-  page2: {
-    flexDirection: 'row',
-    width: '100%',
-    backgroundColor: '#fff',
-    marginLeft: 20,
-    marginRight: 20,
-    borderWidth: 1,
-    borderRadius: 2,
-    borderColor: '#ECECEC',
-  },
-  section: {
-    margin: 20,
-    flexGrow: 1,
-  },
-  sectionFooter: {
-    margin: 20,
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-  },
-  sectionTTC: {
-    margin: 20,
-    flexGrow: 1,
-    alignItems: 'flex-end',
-  },
-  section10: {
-    flexGrow: 1,
-  },
-  section1: {
-    borderWidth: 1,
-    borderRadius: 2,
-    width: '100%',
-    marginBottom: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderColor: '#ECECEC',
-    backgroundColor: '#ECECEC',
-  },
-  section4: {
-    borderWidth: 1,
-    borderRadius: 2,
-    width: '100%',
-    padding: 15,
-    marginTop: 25,
-    justifyContent: 'center',
-    borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF',
-  },
-  section2: {
-    borderWidth: 1,
-    borderRadius: 2,
-    width: '100px',
-    borderColor: '#ECECEC',
-    backgroundColor: '#ECECEC',
-  },
-  section11: {
-    borderWidth: 1,
-    width: '10%',
-    borderColor: '#FFF',
-    backgroundColor: '#ECECEC',
-  },
-  section13: {
-    width: '10%',
-    backgroundColor: '#FFF',
-  },
-  section15: {
-    borderWidth: 1,
-    width: '5%',
-    borderColor: '#FFF',
-    backgroundColor: '#ECECEC',
-  },
-  section16: {
-    width: '5%',
-    backgroundColor: '#FFF',
-  },
-  section12: {
-    borderWidth: 1,
-    width: '60%',
-    borderColor: '#FFF',
-    backgroundColor: '#ECECEC',
-  },
-  section14: {
-    width: '60%',
-    backgroundColor: '#FFF',
-  },
-  section5: {
-    borderWidth: 1,
-    borderRadius: 2,
-    width: '100px',
-    borderColor: '#ECECEC',
-    backgroundColor: '#FFFFFF',
-  },
-  section3: {
-    borderWidth: 1,
-    borderRadius: 2,
-    padding: 8,
-    justifyContent: 'center',
-    width: '100px',
-    borderColor: '#ECECEC',
-    backgroundColor: '#FFF',
-  },
-});
 
 export default ModalPrintInvoice;

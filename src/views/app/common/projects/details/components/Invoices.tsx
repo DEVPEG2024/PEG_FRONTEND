@@ -21,7 +21,12 @@ import { Invoice } from '@/@types/invoice';
 import { Customer } from '@/@types/customer';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
-import ModalEditInvoice from '@/views/app/common/invoices/modals/ModalEditInvoice';
+import ModalInvoiceEditor, {
+  InvoiceDraft,
+  invoiceSaveError,
+  toInvoiceCreate,
+  toInvoiceUpdate,
+} from '@/views/app/common/invoices/modals/ModalInvoiceEditor';
 const ModalPrintInvoice = lazy(() => import('@/views/app/common/invoices/modals/ModalPrintInvoice'));
 import { stateData } from '@/views/app/common/invoices/constants';
 import { toast } from 'react-toastify';
@@ -30,6 +35,8 @@ import { TVA_RATE, fmtTTC, fmtHT } from '@/utils/priceHelpers';
 import usePriceView from '@/utils/hooks/usePriceView';
 import { CreateInvoiceRequest } from '@/services/InvoicesServices';
 import { isNumberedInvoice } from '@/utils/invoiceHelpers';
+import { draftLinesForProject } from '@/utils/invoiceLines';
+import { apiGetProjectQuote } from '@/services/QuoteServices';
 
 const Invoices = () => {
   const { user }: { user: User } = useAppSelector(
@@ -47,6 +54,10 @@ const Invoices = () => {
   } = useAppSelector((state) => state.projectDetails.data);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Brouillon de la facture du projet, vérifié dans l'éditeur AVANT émission.
+  const [draft, setDraft] = useState<InvoiceDraft | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const isAdmin = hasRole(user, [SUPER_ADMIN, ADMIN]);
 
   const handleCancelInvoice = (invoice: Invoice) => {
     dispatch(
@@ -72,45 +83,56 @@ const Invoices = () => {
     dispatch(setPrintProjectInvoiceDialog(true));
   };
 
+  // Facturer le projet : brouillon pré-rempli (produit et tailles de la
+  // commande, sinon titre et quantité du devis, sinon nom du projet), relu dans
+  // l'éditeur. Le numéro FAC-XXXX n'est attribué qu'à l'émission.
   const generateInvoice = async (): Promise<void> => {
-    const errorsOnGeneration: string[] = verifyGeneration();
-    if (errorsOnGeneration.length > 0) {
-      errorsOnGeneration.forEach((errorOnGeneration) =>
-        toast.error(errorOnGeneration)
-      );
-    } else {
-      // Pas de `name` : le numéro FAC-XXXX est attribué par Strapi à
-      // l'insertion (séquence atomique partagée avec NOVA et les paiements
-      // Stripe). Le calculer ici produisait des doublons.
-      const invoice: CreateInvoiceRequest = {
-        // Présence du client garantie en amont par verifyGeneration(). apiCreateInvoice ne lit que customer.documentId.
-        customer: project.customer as Customer,
-        orderItems: [],
-        amount: project.price,
-        vatAmount: Math.round(project.price * TVA_RATE * 100) / 100,
-        totalAmount: Math.round(project.price * (1 + TVA_RATE) * 100) / 100,
-        date: dayjs().toDate(),
-        dueDate: dayjs().add(30, 'day').toDate(),
-        state: 'pending',
-        paymentMethod: 'transfer',
-        paymentAmount: 0,
-        paymentReference: '',
-        paymentState: 'pending',
-        paymentDate: new Date(0),
-      };
-      dispatch(addInvoice({ invoice, project }));
+    if (!project.customer) {
+      toast.error('Aucun client renseigné sur le projet');
+      return;
+    }
+    setPreparing(true);
+    try {
+      const quote = project.orderItem
+        ? null
+        : await apiGetProjectQuote(project.documentId).catch(() => null);
+      setDraft({
+        customer: { documentId: project.customer.documentId, name: project.customer.name },
+        project: { documentId: project.documentId, name: project.name },
+        lines: draftLinesForProject(project, quote),
+      });
+    } finally {
+      setPreparing(false);
     }
   };
 
-  const verifyGeneration = (): string[] => {
-    const errors: string[] = [];
-    if (!project.customer) {
-      errors.push('Aucun client renseigné sur le projet');
+  const emitInvoice = async (values: Parameters<typeof toInvoiceCreate>[0]): Promise<boolean> => {
+    try {
+      await dispatch(addInvoice({ invoice: toInvoiceCreate(values, project.documentId), project })).unwrap();
+      toast.success('Facture émise');
+      setDraft(null);
+      return true;
+    } catch (err) {
+      toast.error(invoiceSaveError(err));
+      return false;
     }
-    if (!project.price || project.price === 0) {
-      errors.push('Le montant du projet est nul');
+  };
+
+  const saveInvoice = async (values: Parameters<typeof toInvoiceUpdate>[1]): Promise<boolean> => {
+    if (!selectedInvoice) return false;
+    try {
+      await dispatch(updateProjectInvoice(toInvoiceUpdate(selectedInvoice.documentId, values))).unwrap();
+      toast.success('Facture enregistrée');
+      return true;
+    } catch (err) {
+      toast.error(invoiceSaveError(err));
+      return false;
     }
-    return errors;
+  };
+
+  const closeEditor = () => {
+    dispatch(setEditProjectInvoiceDialog(false));
+    dispatch(setSelectedProjectInvoice(null));
   };
 
   const handleUploadInvoice = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,7 +211,7 @@ const Invoices = () => {
         }}>
           {hasRole(user, [SUPER_ADMIN, ADMIN]) && (
             <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <Button loading={loading} onClick={generateInvoice}>
+              <Button loading={preparing} onClick={generateInvoice}>
                 Générer la facture du projet
               </Button>
               {!project?.orderItem && (
@@ -327,15 +349,22 @@ const Invoices = () => {
         </div>
         <DetailsRight />
       </div>
-      {selectedInvoice && editInvoiceDialog && hasRole(user, [SUPER_ADMIN, ADMIN]) && (
-        <ModalEditInvoice
-          editInvoiceDialog={editInvoiceDialog}
-          selectedInvoice={selectedInvoice}
-          setEditInvoiceDialog={setEditProjectInvoiceDialog}
-          setSelectedInvoice={setSelectedProjectInvoice}
-          updateInvoice={updateProjectInvoice}
-          dispatch={dispatch}
-          loading={loading}
+      {selectedInvoice && editInvoiceDialog && isAdmin && (
+        <ModalInvoiceEditor
+          mode="edit"
+          invoice={selectedInvoice}
+          saving={loading}
+          onClose={closeEditor}
+          onSubmit={saveInvoice}
+        />
+      )}
+      {draft && isAdmin && (
+        <ModalInvoiceEditor
+          mode="create"
+          draft={draft}
+          saving={loading}
+          onClose={() => setDraft(null)}
+          onSubmit={emitInvoice}
         />
       )}
       {selectedInvoice && printInvoiceDialog && (

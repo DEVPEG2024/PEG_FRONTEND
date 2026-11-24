@@ -2,20 +2,82 @@ import { Invoice } from '@/@types/invoice';
 import ApiService from './ApiService'
 import { ApiResponse, PageInfo, PaginationRequest } from '@/utils/serviceHelper';
 import { API_GRAPHQL_URL, EXPRESS_BACKEND_URL } from '@/configs/api.config';
-import { AxiosResponse } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 
-// create invoice
-// `name` = le numéro de facture. Il est attribué par le SERVEUR : ne pas le
-// renseigner pour une facture émise par PEG. Seul cas où il est transmis (et
-// conservé) : le téléversement d'un PDF externe, dont on garde le nom de
-// fichier — ce document reste hors de la séquence FAC-XXXX.
-export type CreateInvoiceRequest = Omit<Invoice, "documentId" | "name"> & { name?: string }
+// ─── Lignes de facture (`lines`) ─────────────────────────────────────────────
+// Champ ajouté côté Strapi le 24/11/2026. Tant que le backend n'est pas
+// redéployé, le demander fait échouer TOUTE la requête (champ inconnu → 400).
+// On le demande donc ; si le serveur ne le connaît pas, on rejoue sans lui et
+// on s'en souvient pour la session (même mécanique que `mobileImage` des
+// bannières — l'introspection GraphQL est désactivée en prod). Sans le champ,
+// l'affichage reconstitue les lignes (utils/invoiceLines.ts).
+let invoiceLinesSupport: boolean | null = null;
 
-export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<AxiosResponse<ApiResponse<{createInvoice: Invoice}>>> {
-    const query = `
-    mutation CreateInvoice($data: InvoiceInput!) {
-        createInvoice(data: $data) {
+/** `false` seulement quand le serveur a refusé le champ (pas encore déployé). */
+export const isInvoiceLinesSupported = (): boolean => invoiceLinesSupport !== false;
+
+const rejectsLines = (payload: unknown): boolean => {
+    const errors = (payload as { errors?: { message?: string }[] } | undefined)?.errors;
+    return Array.isArray(errors) && errors.some((e) => /"lines"/.test(e?.message ?? ''));
+};
+
+type GraphQLRequest = { query: string; variables?: Record<string, unknown> };
+
+/**
+ * Requête GraphQL qui mentionne `lines`. `build(false)` doit produire la même
+ * requête sans ce champ (sélection ET données écrites). Une requête refusée
+ * pour champ inconnu échoue à la validation : rien n'a été écrit, la rejouer
+ * est sans risque (aucun numéro de facture consommé).
+ */
+async function fetchInvoiceGraphQL<T>(build: (withLines: boolean) => GraphQLRequest): Promise<AxiosResponse<T>> {
+    const send = (withLines: boolean) =>
+        ApiService.fetchData<T>({ url: API_GRAPHQL_URL, method: 'post', data: build(withLines) });
+
+    if (invoiceLinesSupport !== false) {
+        try {
+            const res = await send(true);
+            if (!rejectsLines(res.data)) {
+                invoiceLinesSupport = true;
+                return res;
+            }
+        } catch (err) {
+            if (!rejectsLines((err as AxiosError)?.response?.data)) throw err;
+        }
+        invoiceLinesSupport = false;
+    }
+    return send(false);
+}
+
+const linesField = (withLines: boolean) => (withLines ? 'lines' : '');
+
+/** Retire `lines` des données écrites quand le serveur ne le connaît pas. */
+const withoutLines = <D extends object>(data: D, withLines: boolean): D => {
+    if (withLines || !('lines' in data)) return data;
+    const { lines: _ignored, ...rest } = data as D & { lines?: unknown };
+    return rest as D;
+};
+
+/**
+ * Le serveur conserve-t-il les lignes ? (Une seule requête par session ; sert
+ * à prévenir l'admin avant l'émission d'une facture.)
+ */
+export async function probeInvoiceLinesSupport(): Promise<boolean> {
+    if (invoiceLinesSupport !== null) return invoiceLinesSupport;
+    try {
+        await fetchInvoiceGraphQL((withLines) => ({
+            query: `query ProbeInvoiceLines { invoices(pagination: { limit: 1 }) { documentId ${linesField(withLines)} } }`,
+        }));
+    } catch {
+        return true; // réseau indisponible : ne rien conclure, l'écriture tranchera
+    }
+    return invoiceLinesSupport !== false;
+}
+
+// Tout ce qu'il faut pour imprimer ou éditer une facture : lignes, commandes,
+// projet facturé (repli des factures sans lignes), client complet.
+const invoiceDocumentFields = (withLines: boolean) => `
             documentId
+            ${linesField(withLines)}
             orderItems (pagination: {limit: 100}){
                 documentId
                 product {
@@ -24,9 +86,31 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
                 sizeAndColorSelections
                 price
             }
+            project {
+                documentId
+                name
+                orderItem {
+                    documentId
+                    price
+                    product {
+                        name
+                    }
+                    sizeAndColorSelections
+                }
+            }
             customer {
                 documentId
                 name
+                companyInformations {
+                    email
+                    phoneNumber
+                    siretNumber
+                    vatNumber
+                    zipCode
+                    city
+                    country
+                    address
+                }
             }
             amount
             vatAmount
@@ -36,6 +120,8 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
             paymentDate
             paymentState
             paymentMethod
+            paymentReference
+            paymentAmount
             date
             dueDate
             file {
@@ -43,25 +129,57 @@ export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<Axio
                 url
                 name
             }
+`;
+
+/**
+ * Une facture complète, relue au serveur (impression, édition) : le PDF reflète
+ * toujours l'état enregistré, quel que soit l'écran qui l'ouvre.
+ */
+export async function apiGetInvoiceDocument(documentId: string): Promise<Invoice | null> {
+    const res = await fetchInvoiceGraphQL<ApiResponse<{ invoice: Invoice | null }>>((withLines) => ({
+        query: `
+    query GetInvoiceDocument($documentId: ID!) {
+        invoice(documentId: $documentId) {
+            ${invoiceDocumentFields(withLines)}
+        }
+    }`,
+        variables: { documentId },
+    }));
+    const errors = (res.data as { errors?: { message: string }[] }).errors;
+    if (errors?.length && !res.data?.data?.invoice) throw new Error(errors[0]?.message ?? 'GraphQL error');
+    return res.data?.data?.invoice ?? null;
+}
+
+// create invoice
+// `name` = le numéro de facture. Il est attribué par le SERVEUR : ne pas le
+// renseigner pour une facture émise par PEG. Seul cas où il est transmis (et
+// conservé) : le téléversement d'un PDF externe, dont on garde le nom de
+// fichier — ce document reste hors de la séquence FAC-XXXX.
+export type CreateInvoiceRequest = Omit<Invoice, "documentId" | "name" | "project"> & {
+    name?: string
+    /** Projet facturé (documentId) : relie la facture et permet au serveur d'en déduire les lignes. */
+    project?: string | null
+}
+
+export async function apiCreateInvoice(data: CreateInvoiceRequest): Promise<AxiosResponse<ApiResponse<{createInvoice: Invoice}>>> {
+    const { customer: _c, orderItems: _o, project, ...invoiceData } = data;
+    return fetchInvoiceGraphQL<ApiResponse<{createInvoice: Invoice}>>((withLines) => ({
+        query: `
+    mutation CreateInvoice($data: InvoiceInput!) {
+        createInvoice(data: $data) {
+            ${invoiceDocumentFields(withLines)}
         }
     }
   `,
-  { customer: _c, orderItems: _o, ...invoiceData } = data,
-  variables = {
-    data: {
-        ...invoiceData,
-        customer: data.customer?.documentId,
-        orderItems: data.orderItems?.map(({documentId}) => documentId) ?? [],
-    }
-  }
-    return ApiService.fetchData<ApiResponse<{createInvoice: Invoice}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
-    })
+        variables: {
+            data: withoutLines({
+                ...invoiceData,
+                customer: data.customer?.documentId,
+                orderItems: data.orderItems?.map(({documentId}) => documentId) ?? [],
+                ...(project ? { project } : {}),
+            }, withLines),
+        },
+    }));
 }
 
 // get invoices
@@ -253,63 +371,18 @@ export async function apiGetCustomerInvoices(data: GetCustomerInvoicesRequest = 
 
 // update invoice
 export async function apiUpdateInvoice(invoice: Partial<Invoice>): Promise<AxiosResponse<ApiResponse<{updateInvoice: Invoice}>>> {
-    const query = `
+    // `project` est une relation en lecture seule ici : jamais réécrite par l'édition.
+    const { documentId, project: _p, ...data } = invoice;
+    return fetchInvoiceGraphQL<ApiResponse<{updateInvoice: Invoice}>>((withLines) => ({
+        query: `
     mutation UpdateInvoice($documentId: ID!, $data: InvoiceInput!) {
         updateInvoice(documentId: $documentId, data: $data) {
-            documentId
-            orderItems (pagination: {limit: 100}){
-                documentId
-                product {
-                    name
-                }
-                sizeAndColorSelections
-                price
-            }
-            customer {
-                documentId
-                name
-                companyInformations {
-                    email
-                    phoneNumber
-                    siretNumber
-                    vatNumber
-                    zipCode
-                    city
-                    country
-                    address
-                }
-            }
-            amount
-            vatAmount
-            totalAmount
-            name
-            state
-            paymentDate
-            paymentState
-            paymentMethod
-            date
-            dueDate
-            file {
-                documentId
-                url
-                name
-            }
+            ${invoiceDocumentFields(withLines)}
         }
     }
   `,
-  {documentId, ...data} = invoice,
-  variables = {
-    documentId,
-    data
-  }
-    return ApiService.fetchData<ApiResponse<{updateInvoice: Invoice}>>({
-        url: API_GRAPHQL_URL,
-        method: 'post',
-        data: {
-            query,
-            variables
-        }
-    })
+        variables: { documentId, data: withoutLines(data, withLines) },
+    }));
 }
 
 // Contrôle de cohérence de la séquence (admins).

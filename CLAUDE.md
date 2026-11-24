@@ -179,6 +179,24 @@ Ils conservent leur nom de fichier — le numéro est déjà imprimé sur le PDF
 
 ---
 
+## 🧾 Lignes de facture & module de facturation (ajout 24/11/2026)
+
+### Le problème
+Une facture n'avait pas de lignes : le PDF les reconstituait depuis `orderItems`, vides pour « Générer la facture du projet », les devis et NOVA → « Prestation PEG », quantité 1. « P.U. » affichait le total de ligne ; livraison et remises absentes.
+
+### Le modèle
+`invoice.lines` (Strapi, JSON) = lignes figées à l'émission `{ label, details?, quantity, unitPrice, total, kind? }`. Le **total de ligne fait foi** ; **Σ lignes = montant HT**. Le serveur les remplit pour toutes les sources et refuse une saisie incohérente (voir CLAUDE.md de peg_strapi, section « Lignes de facture »).
+
+### Front
+- `src/utils/invoiceLines.ts` : **miroir** de `peg_strapi/src/services/invoice-lines.ts` (garder aligné) + `resolveInvoiceLines` (affichage : lignes enregistrées, sinon reconstituées depuis commandes → commande du projet → nom du projet, sans jamais modifier la facture), `draftLinesForProject`, `totalsFromLines`, `isInvoicePaid`. Tests : `src/__tests__/invoiceLines.test.ts`.
+- `InvoicesServices.ts` : `apiGetInvoiceDocument` (facture complète : lignes, projet, client) ; création/mise à jour envoient `lines`. **Repli** façon `mobileImage` : champ inconnu du serveur → requête rejouée sans `lines`, mémorisé pour la session (`isInvoiceLinesSupported`). Jamais de sonde `__type` (introspection désactivée).
+- `invoices/pdf/InvoicePDF.tsx` : PDF refait (émetteur, n°, dates, projet, client, règlement, tableau Désignation / Qté / P.U. HT / TVA / Total HT avec détail tailles-coloris, totaux, IBAN si impayée, mentions légales paginées). ⚠️ Polices standard (WinAnsi) : pas d'espace fine U+202F → `pdfMoney`/`pdfQuantity` maison. TVA affichée = TVA **facturée** (un client hors France payé TTC reste TTC) ; mention d'exonération seulement pour une facture sans TVA hors France.
+- `ModalPrintInvoice` relit la facture complète avant de générer le PDF (repli : la facture de la liste).
+- `modals/ModalInvoiceEditor.tsx` (remplace ModalEditInvoice) : création ET modification, lignes éditables, totaux en direct, TVA 20 % activable, téléphone en cartes. **Facture encaissée → montants figés** (désignations modifiables). Brouillon reconstitué → bandeau « vérifiez puis enregistrez pour figer ».
+- « Générer la facture du projet » ouvre un **brouillon** (produit + tailles de la commande, sinon titre + quantité du devis via `apiGetProjectQuote`, sinon nom du projet) vérifié AVANT émission — le numéro n'est attribué qu'à l'émission. Liste des factures : bouton admin **« Nouvelle facture »** (choix du client).
+
+---
+
 ## 🔔 Système de notifications (mise à jour 03/04/2026)
 
 ### Architecture

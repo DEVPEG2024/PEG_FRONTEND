@@ -75,6 +75,28 @@ export async function apiGetCustomerQuotes(
     })
 }
 
+// Devis à l'origine d'un projet (titre, type, quantité) — pré-remplit la
+// ligne de sa facture. `null` si le projet ne vient pas d'un devis.
+export async function apiGetProjectQuote(
+    projectDocumentId: string
+): Promise<Pick<Quote, 'documentId' | 'title' | 'projectType' | 'quantity'> | null> {
+    const query = `
+    query GetProjectQuote($projectDocumentId: ID!) {
+        quotes(filters: { project: { documentId: { eq: $projectDocumentId } } }, pagination: { limit: 1 }) {
+            documentId
+            title
+            projectType
+            quantity
+        }
+    }`
+    const res = await ApiService.fetchData<ApiResponse<{ quotes: Quote[] }>>({
+        url: API_GRAPHQL_URL,
+        method: 'post',
+        data: { query, variables: { projectDocumentId } },
+    })
+    return res.data?.data?.quotes?.[0] ?? null
+}
+
 export type CreateQuoteRequest = {
     title?: string;
     status?: string;

@@ -3,14 +3,14 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Invoice } from '@/@types/invoice';
 import { injectReducer, useAppDispatch, useAppSelector as useRootAppSelector, RootState } from '@/store';
-import reducer, { deleteInvoice, getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
-import ModalEditInvoice from './modals/ModalEditInvoice';
+import reducer, { createInvoice, deleteInvoice, getInvoices, setEditInvoiceDialog, setPrintInvoiceDialog, setSelectedInvoice, updateInvoice, useAppSelector } from './store';
+import ModalInvoiceEditor, { InvoiceEditorValues, invoiceSaveError, toInvoiceCreate, toInvoiceUpdate } from './modals/ModalInvoiceEditor';
 const ModalPrintInvoice = lazy(() => import('./modals/ModalPrintInvoice'));
 import { User } from '@/@types/user';
 import { hasRole } from '@/utils/permissions';
 import { ADMIN, SUPER_ADMIN } from '@/constants/roles.constant';
 import dayjs from 'dayjs';
-import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck } from 'react-icons/hi';
+import { HiOutlineSearch, HiPencil, HiPrinter, HiBan, HiDocumentText, HiTrash, HiCreditCard, HiDownload, HiCheckCircle, HiClock, HiDocumentDuplicate, HiDocumentReport, HiClipboardCheck, HiPlus } from 'react-icons/hi';
 import { FaPiggyBank } from 'react-icons/fa';
 import { fmtPrice, fmtHT, fmtTTC, fmtEur, fmtNum } from '@/utils/priceHelpers';
 import usePriceView from '@/utils/hooks/usePriceView';
@@ -202,6 +202,36 @@ const InvoicesList = () => {
   const { invoices, total, loading, selectedInvoice, editInvoiceDialog, printInvoiceDialog } = useAppSelector((state) => state.invoices.data);
   const [report, setReport] = useState<NumberingReport | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const closeEditor = () => {
+    dispatch(setEditInvoiceDialog(false));
+    dispatch(setSelectedInvoice(null));
+  };
+
+  const saveInvoice = async (values: InvoiceEditorValues): Promise<boolean> => {
+    if (!selectedInvoice) return false;
+    try {
+      await dispatch(updateInvoice(toInvoiceUpdate(selectedInvoice.documentId, values))).unwrap();
+      toast.success('Facture enregistrée');
+      return true;
+    } catch (err) {
+      toast.error(invoiceSaveError(err));
+      return false;
+    }
+  };
+
+  const emitInvoice = async (values: InvoiceEditorValues): Promise<boolean> => {
+    try {
+      const created = await dispatch(createInvoice(toInvoiceCreate(values))).unwrap();
+      toast.success(`Facture ${created.name} émise`);
+      setCreating(false);
+      return true;
+    } catch (err) {
+      toast.error(invoiceSaveError(err));
+      return false;
+    }
+  };
 
   const loadNumberingReport = async () => {
     setReportLoading(true);
@@ -336,8 +366,15 @@ const InvoicesList = () => {
           />
         </div>
         {isAdmin && (
+          <button onClick={() => setCreating(true)} title="Émettre une facture"
+            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #6d5dfc, #4f3ae0)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '13px', fontWeight: 700, fontFamily: 'Inter, sans-serif', boxShadow: '0 4px 14px rgba(91,60,245,0.3)' }}
+          >
+            <HiPlus size={15} /> Nouvelle facture
+          </button>
+        )}
+        {isAdmin && (
           <button onClick={loadNumberingReport} title="Vérifier la continuité de la numérotation" disabled={reportLoading}
-            style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.3)', cursor: reportLoading ? 'wait' : 'pointer', color: '#6b9eff', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '7px', height: '38px', padding: '0 16px', borderRadius: '10px', background: 'rgba(47,111,237,0.1)', border: '1px solid rgba(47,111,237,0.3)', cursor: reportLoading ? 'wait' : 'pointer', color: '#6b9eff', fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.2)' }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(47,111,237,0.1)' }}
           >
@@ -593,7 +630,17 @@ const InvoicesList = () => {
       </div>
 
       {isAdmin && selectedInvoice && editInvoiceDialog && (
-        <ModalEditInvoice editInvoiceDialog={editInvoiceDialog} selectedInvoice={selectedInvoice} setEditInvoiceDialog={setEditInvoiceDialog} setSelectedInvoice={setSelectedInvoice} updateInvoice={updateInvoice} dispatch={dispatch} loading={loading} />
+        <ModalInvoiceEditor mode="edit" invoice={selectedInvoice} saving={loading} onClose={closeEditor} onSubmit={saveInvoice} />
+      )}
+      {isAdmin && creating && (
+        <ModalInvoiceEditor
+          mode="create"
+          customerSelectable
+          draft={{ customer: null, lines: [] }}
+          saving={loading}
+          onClose={() => setCreating(false)}
+          onSubmit={emitInvoice}
+        />
       )}
       {selectedInvoice && printInvoiceDialog && (
         <Suspense fallback={null}>
