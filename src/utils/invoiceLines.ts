@@ -307,7 +307,17 @@ export function resolveInvoiceLines(invoice: InvoiceForLines | null | undefined)
   const amountHT = Number(invoice?.amount) || 0;
   if (Array.isArray(invoice?.lines) && invoice!.lines.length > 0) {
     const { lines, error } = validateInvoiceLines(invoice!.lines);
-    if (!error) return { lines, source: 'stored' };
+    // Montant modifié hors de Strapi (SQL direct d'une ancienne version de
+    // NOVA, base retouchée…) : le tableau doit quand même retomber sur le
+    // Total HT — l'écart s'affiche en ligne « Ajustement », jamais en silence.
+    if (!error) {
+      return {
+        lines: sameAmount(sumLines(lines), amountHT)
+          ? lines
+          : reconcileLines(lines, amountHT, { shippingHT: CATALOG_SHIPPING_HT }),
+        source: 'stored',
+      };
+    }
   }
   const items = (invoice?.orderItems ?? []).filter(Boolean);
   let lines: InvoiceLine[];

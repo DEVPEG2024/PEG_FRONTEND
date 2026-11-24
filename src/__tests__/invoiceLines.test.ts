@@ -66,6 +66,13 @@ describe('le constat du 23/11 : nom de la prestation et quantité', () => {
     });
   });
 
+  test('montant changé hors de Strapi : les lignes enregistrées retombent quand même sur le total', () => {
+    const stored = [{ label: 'Kakémonos', quantity: 12, unitPrice: 200, total: 2400 }];
+    const { lines } = resolveInvoiceLines({ amount: 2500, lines: stored });
+    expect(lines.map((l) => [l.label, l.total])).toEqual([['Kakémonos', 2400], ['Ajustement', 100]]);
+    expect(sumLines(lines)).toBe(2500);
+  });
+
   test('facture vide de tout → une ligne « Prestation » au montant, jamais un tableau vide', () => {
     expect(resolveInvoiceLines({ amount: 500 }).lines).toEqual([
       { label: 'Prestation', quantity: 1, unitPrice: 500, total: 500, kind: 'service' },
